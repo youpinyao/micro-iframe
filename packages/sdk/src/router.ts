@@ -1,5 +1,6 @@
-import { MessageType, Message, RouteChangeMessage, MessageHandler } from '@micro-iframe/types'
+import { MessageType, Message, RouteChangeMessage, MessageHandler, type AppProps } from '@micro-iframe/types'
 import { getCurrentPath } from '@micro-iframe/utils'
+import type { MicroApp } from './micro-app'
 
 /**
  * 路由管理器（子应用）
@@ -7,14 +8,17 @@ import { getCurrentPath } from '@micro-iframe/utils'
 export class MicroRouter {
   private currentRoute = ''
   private routeChangeListeners: Set<(route: string) => void> = new Set()
+  private microApp?: MicroApp
 
   constructor(
     private communication: {
       on: (type: string, handler: MessageHandler) => () => void
       emit: (event: string, payload?: unknown) => void
       sendRouteSync: (route: string) => void
-    }
+    },
+    microApp?: MicroApp
   ) {
+    this.microApp = microApp
     this.init()
   }
 
@@ -147,13 +151,22 @@ export class MicroRouter {
    * 导航到指定路由（使用 pushState，不刷新页面）
    */
   public navigate(route: string, options?: { replace?: boolean }): void {
-    console.log('navigate', route)
+    // 获取主应用的基础路径（从 props 中获取）
+    const props = this.microApp?.getCurrentProps()
+    const baseRoute = props?.route || ''
     
-    const targetRoute = this.resolveRoute(route)
+    // 只有当子应用路径不是以 baseRoute 开头时才处理（避免重复）
+    let targetRoute = route
+    if (baseRoute && !route.startsWith(baseRoute)) {
+      // 如果路由不包含 baseRoute，则拼接 baseRoute
+      targetRoute = `${baseRoute}${this.resolveRoute(route)}`
+    }
+    
+    targetRoute = this.resolveRoute(targetRoute)
     if (targetRoute === this.currentRoute) {
       return
     }
-
+    
     // 判断路由模式（检查当前 URL 是否有 hash）
     // 注意：在 iframe 中，子应用可能使用 hash 模式，需要根据实际情况判断
     const hasHash = window.location.hash !== ''

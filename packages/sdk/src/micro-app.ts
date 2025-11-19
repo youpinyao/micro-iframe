@@ -25,8 +25,8 @@ export class MicroApp {
     // 初始化生命周期管理器
     this.lifecycle = new LifecycleManager(this.communication)
 
-    // 初始化路由管理器
-    this.router = new MicroRouter(this.communication)
+    // 初始化路由管理器，传入 MicroApp 实例以便访问 baseRoute
+    this.router = new MicroRouter(this.communication, this)
   }
 
   /**

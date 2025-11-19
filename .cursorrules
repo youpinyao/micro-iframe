@@ -1,0 +1,14 @@
+# 说明
+
+## 技术栈
+
+- js
+- typescript@5
+- eslint@9
+- prettier@3
+- commitlint@20
+- husky@9
+- lint-staged@16
+- turbo@2
+- vite@7
+

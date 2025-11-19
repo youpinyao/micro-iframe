@@ -1,7 +1,13 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router-dom'
-import { initReactMicroApp, type ReactDependencies } from '@micro-iframe/sdk'
+import {
+  initReactMicroApp,
+  type ReactDependencies,
+  type AppProps,
+  type Message,
+  type MicroApp,
+} from '@micro-iframe/sdk'
 import App from './App'
 import Home from './views/Home'
 import Page1 from './views/Page1'
@@ -39,7 +45,6 @@ const reactDeps: ReactDependencies = {
   ReactDOM,
   createBrowserRouter,
   RouterProvider,
-  RouteObject: {} as any, // 仅用于类型，实际不使用
 }
 
 // 初始化微前端应用
@@ -48,24 +53,23 @@ const microApp = initReactMicroApp({
   rootComponent: App,
   routes,
   containerId: 'root',
-  onMount: (props) => {
+  onMount: (props: AppProps) => {
     console.log('React 应用挂载:', props)
   },
-  onUnmount: (props) => {
+  onUnmount: (props: AppProps) => {
     console.log('React 应用卸载:', props)
   },
-  onUpdate: (props) => {
+  onUpdate: (props: AppProps) => {
     console.log('React 应用更新:', props)
   },
 })
 
 // 监听路由变化（可选）
-microApp.router.onRouteChange((route) => {
+microApp.router.onRouteChange((route: string) => {
   console.log('路由变化:', route)
 })
 
 // 监听通信（可选）
-microApp.communication.on('*', (message) => {
+microApp.communication.on('*', (message: Message) => {
   console.log('收到消息 react:', message)
 })
-

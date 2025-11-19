@@ -6,5 +6,5 @@ export { initReactMicroApp, type ReactMicroAppOptions, type ReactDependencies } 
 export { initVueMicroApp, type VueMicroAppOptions, type VueDependencies } from './vue'
 export { createUseRouteSync, type ReactRouterDependencies } from './useRouteSync'
 // 重新导出类型，方便子应用使用
-export type { AppProps } from '@micro-iframe/types'
+export type { AppProps, Message } from '@micro-iframe/types'
 

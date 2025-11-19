@@ -135,4 +135,3 @@ export function initReactMicroApp(options: ReactMicroAppOptions): MicroApp {
 
   return microApp
 }
-

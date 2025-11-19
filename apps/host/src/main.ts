@@ -13,12 +13,14 @@ microIframe.registerApps([
     url: 'http://localhost:3001',
     routeMatch: '/react',
     container: '#micro-app-container',
+    cache: true,
   },
   {
     name: 'vue-app',
     url: 'http://localhost:3002',
     routeMatch: '/vue',
     container: '#micro-app-container',
+    cache: true,
   },
 ])
 

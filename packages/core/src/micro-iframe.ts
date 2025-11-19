@@ -55,10 +55,27 @@ export class MicroIframe {
   }
 
   /**
-   * 取消注册应用
+   * 取消注册应用（如果应用有缓存，会先销毁缓存）
    */
-  public unregisterApp(name: string): void {
+  public async unregisterApp(name: string): Promise<void> {
+    const app = this.registry.getApp(name)
+    if (app && app.iframe) {
+      // 如果应用有缓存，先销毁缓存
+      await this.loader.destroyCache(app).catch(() => {
+        // 忽略销毁错误
+      })
+    }
     this.registry.unregister(name)
+  }
+
+  /**
+   * 清理指定应用的缓存（真正卸载并移除 iframe，触发 unmount 生命周期）
+   */
+  public async clearCache(name: string): Promise<void> {
+    const app = this.registry.getApp(name)
+    if (app && app.iframe && app.config.cache) {
+      await this.loader.destroyCache(app)
+    }
   }
 
   /**
@@ -106,16 +123,26 @@ export class MicroIframe {
   /**
    * 销毁框架
    */
-  public destroy(): void {
-    // 卸载所有应用
+  public async destroy(): Promise<void> {
+    // 销毁所有应用（包括缓存的应用）
     const apps = this.registry.getAllApps()
-    apps.forEach((app) => {
-      if (app.iframe) {
-        this.loader.unmountApp(app).catch(() => {
-          // 忽略卸载错误
-        })
-      }
-    })
+    await Promise.all(
+      apps.map((app) => {
+        if (app.iframe) {
+          // 如果有缓存，使用 destroyCache 真正销毁
+          if (app.config.cache) {
+            return this.loader.destroyCache(app).catch(() => {
+              // 忽略销毁错误
+            })
+          } else {
+            return this.loader.unmountApp(app).catch(() => {
+              // 忽略卸载错误
+            })
+          }
+        }
+        return Promise.resolve()
+      })
+    )
 
     // 销毁路由管理器
     this.router.destroy()

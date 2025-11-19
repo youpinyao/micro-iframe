@@ -180,25 +180,33 @@ export class RouterManager {
         throw new Error('Container not found')
       }
 
-      // 发送挂载消息
-      // 延迟发送，确保子应用的通信管理器已经初始化
-      const iframeWindow = app.iframe?.contentWindow
-      if (iframeWindow) {
-        // 使用 setTimeout 确保子应用的通信管理器已经初始化
-        setTimeout(() => {
-          try {
-            this.communication.sendLifecycle(
-              MessageType.MOUNT,
-              {
-                route,
-                meta: app.config.meta,
-              },
-              iframeWindow
-            )
-          } catch (error) {
-            console.warn(`Failed to send mount message to ${app.config.name}:`, error)
-          }
-        }, 100)
+      // 如果是 cache 模式且已经挂载过，只显示应用，不触发 mount 生命周期
+      const isFromCache = app.config.cache && app.hasMounted
+
+      if (!isFromCache) {
+        // 发送挂载消息（首次挂载或非 cache 模式）
+        // 延迟发送，确保子应用的通信管理器已经初始化
+        const iframeWindow = app.iframe?.contentWindow
+        if (iframeWindow) {
+          // 使用 setTimeout 确保子应用的通信管理器已经初始化
+          setTimeout(() => {
+            try {
+              this.communication.sendLifecycle(
+                MessageType.MOUNT,
+                {
+                  name: app.config.name,
+                  route,
+                  meta: app.config.meta,
+                },
+                iframeWindow
+              )
+            } catch (error) {
+              console.warn(`Failed to send mount message to ${app.config.name}:`, error)
+            }
+          }, 100)
+        }
+        // 标记为已挂载
+        app.hasMounted = true
       }
 
       // 显示应用

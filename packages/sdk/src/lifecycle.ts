@@ -28,13 +28,7 @@ export class LifecycleManager {
       if (message.type === MessageType.MOUNT) {
         const lifecycleMessage = message as LifecycleMessage
         if (lifecycleMessage.props) {
-          const props: AppProps = {
-            name: '',
-            container: document.body,
-            route: lifecycleMessage.props.route || '',
-            meta: lifecycleMessage.props.meta,
-          }
-          this.handleMount(props)
+          this.handleMount(lifecycleMessage.props)
         }
       }
     })
@@ -49,13 +43,7 @@ export class LifecycleManager {
       if (message.type === MessageType.UPDATE) {
         const lifecycleMessage = message as LifecycleMessage
         if (lifecycleMessage.props) {
-          const props: AppProps = {
-            name: '',
-            container: document.body,
-            route: lifecycleMessage.props.route || '',
-            meta: lifecycleMessage.props.meta,
-          }
-          this.handleUpdate(props)
+          this.handleUpdate(lifecycleMessage.props)
         }
       }
     })

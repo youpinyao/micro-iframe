@@ -73,6 +73,12 @@ export interface AppConfig {
    * 应用元数据
    */
   meta?: Record<string, unknown>
+
+  /**
+   * 是否缓存应用（卸载时保留 iframe，下次加载时直接恢复）
+   * @default false
+   */
+  cache?: boolean
 }
 
 /**
@@ -98,6 +104,11 @@ export interface AppInstance {
    * 错误信息
    */
   error?: Error
+
+  /**
+   * 是否已经挂载过（用于 cache 模式判断是否需要触发 mount 生命周期）
+   */
+  hasMounted?: boolean
 }
 
 /**
@@ -108,11 +119,6 @@ export interface AppProps {
    * 应用名称
    */
   name: string
-
-  /**
-   * 容器元素
-   */
-  container: HTMLElement
 
   /**
    * 路由信息

@@ -5,6 +5,7 @@ import type {
   RequestMessage,
   ResponseMessage,
   LifecycleMessage,
+  AppProps,
 } from '@micro-iframe/types'
 import { MessageSource, MessageType } from '@micro-iframe/types'
 
@@ -120,7 +121,7 @@ export class CommunicationManager {
    */
   public sendLifecycle(
     type: MessageType.MOUNT | MessageType.UNMOUNT | MessageType.UPDATE,
-    props?: { route?: string; meta?: Record<string, unknown> },
+    props?: AppProps,
     targetWindow?: Window
   ): void {
     const lifecycleMessage: Omit<LifecycleMessage, 'source' | 'timestamp'> = {

@@ -1,3 +1,5 @@
+import { AppProps } from "./app"
+
 /**
  * 消息类型
  */
@@ -125,10 +127,7 @@ export interface DataGetMessage extends BaseMessage {
  */
 export interface LifecycleMessage extends BaseMessage {
   type: MessageType.MOUNT | MessageType.UNMOUNT | MessageType.UPDATE
-  props?: {
-    route: string
-    meta?: Record<string, unknown>
-  }
+  props?: AppProps
 }
 
 /**

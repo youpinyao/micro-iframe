@@ -16,12 +16,25 @@ export class AppLoader {
    * 加载应用
    */
   public async loadApp(app: AppInstance): Promise<void> {
+    // 如果应用已加载或已挂载，直接返回
     if (app.status === AppStatus.LOADED || app.status === AppStatus.MOUNTED) {
       return
     }
 
+    // 如果应用正在加载，等待加载完成
     if (app.status === AppStatus.LOADING) {
       return this.waitForLoad(app)
+    }
+
+    // 如果启用了缓存且 iframe 存在，直接恢复
+    if (app.config.cache && app.iframe) {
+      // 确保 iframe 在 DOM 中
+      const container = getContainer(app.config.container)
+      if (container && !container.contains(app.iframe)) {
+        container.appendChild(app.iframe)
+      }
+      app.status = AppStatus.LOADED
+      return
     }
 
     // 如果之前有错误，清除错误状态
@@ -126,9 +139,66 @@ export class AppLoader {
   }
 
   /**
-   * 卸载应用
+   * 卸载应用（cache 模式下只隐藏，不触发 unmount 生命周期）
    */
   public async unmountApp(app: AppInstance): Promise<void> {
+    if (!app.iframe) {
+      app.status = AppStatus.NOT_LOADED
+      return
+    }
+
+    // 如果启用了缓存，只隐藏 iframe，不触发 unmount 生命周期
+    if (app.config.cache) {
+      this.hideApp(app)
+      app.status = AppStatus.LOADED
+      app.error = undefined
+      return
+    }
+
+    // 非缓存模式，正常卸载并触发 unmount 生命周期
+    app.status = AppStatus.UNMOUNTING
+
+    try {
+      // 发送卸载消息给子应用
+      const iframeWindow = app.iframe.contentWindow
+      if (iframeWindow) {
+        try {
+          this.communication.sendLifecycle(MessageType.UNMOUNT, undefined, iframeWindow)
+        } catch (error) {
+          // 忽略跨域错误
+          console.warn('Failed to send unmount message:', error)
+        }
+      }
+
+      // 等待子应用卸载完成（可选）
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // 移除 iframe
+      removeIframe(app.iframe)
+      app.iframe = undefined
+      app.status = AppStatus.NOT_LOADED
+      app.error = undefined
+      app.hasMounted = false
+    } catch (error) {
+      // 即使卸载失败，也要清理 iframe
+      if (app.iframe) {
+        try {
+          removeIframe(app.iframe)
+        } catch {
+          // 忽略清理错误
+        }
+        app.iframe = undefined
+      }
+      app.error = error instanceof Error ? error : new Error('Unmount failed')
+      app.status = AppStatus.ERROR
+      throw error
+    }
+  }
+
+  /**
+   * 销毁缓存的应用（真正卸载并移除 iframe，触发 unmount 生命周期）
+   */
+  public async destroyCache(app: AppInstance): Promise<void> {
     if (!app.iframe) {
       app.status = AppStatus.NOT_LOADED
       return
@@ -156,6 +226,7 @@ export class AppLoader {
       app.iframe = undefined
       app.status = AppStatus.NOT_LOADED
       app.error = undefined
+      app.hasMounted = false
     } catch (error) {
       // 即使卸载失败，也要清理 iframe
       if (app.iframe) {
@@ -166,7 +237,7 @@ export class AppLoader {
         }
         app.iframe = undefined
       }
-      app.error = error instanceof Error ? error : new Error('Unmount failed')
+      app.error = error instanceof Error ? error : new Error('Destroy cache failed')
       app.status = AppStatus.ERROR
       throw error
     }

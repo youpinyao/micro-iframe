@@ -5,6 +5,7 @@ import type {
   RequestMessage,
   ResponseMessage,
   LifecycleMessage,
+  RouteChangeMessage,
   AppProps,
 } from '@micro-iframe/types'
 import { MessageSource, MessageType } from '@micro-iframe/types'
@@ -129,6 +130,17 @@ export class CommunicationManager {
       props,
     }
     this.sendMessage(lifecycleMessage, targetWindow)
+  }
+
+  /**
+   * 发送路由变更消息
+   */
+  public sendRouteChange(route: string, targetWindow?: Window): void {
+    const routeChangeMessage: Omit<RouteChangeMessage, 'source' | 'timestamp'> = {
+      type: MessageType.ROUTE_CHANGE,
+      route,
+    }
+    this.sendMessage(routeChangeMessage, targetWindow)
   }
 
   /**

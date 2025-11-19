@@ -23,16 +23,16 @@ export class MicroRouter {
   private init(): void {
     // 监听主应用路由变化
     this.communication.on(MessageType.ROUTE_CHANGE, (message: Message) => {
-      if (message.type === MessageType.ROUTE_CHANGE) {
-        const routeMessage = message as RouteChangeMessage
-        if (routeMessage.route) {
-          this.handleRouteChange(routeMessage.route)
-        }
+      const routeMessage = message as RouteChangeMessage
+      if (routeMessage.route) {
+        this.handleRouteChange(routeMessage.route)
       }
     })
 
-    // 监听子应用内部路由变化
-    this.setupRouteListener()
+    // 注意：不自动监听子应用内部路由变化
+    // 因为应用层（React Router/Vue Router）会通过 syncRouteToHost 手动同步
+    // 这样可以避免重复发送 ROUTE_SYNC 消息
+    // this.setupRouteListener()
 
     // 初始化当前路由
     this.currentRoute = getCurrentPath()
@@ -88,7 +88,17 @@ export class MicroRouter {
     const route = getCurrentPath()
     if (route !== this.currentRoute) {
       this.currentRoute = route
-      this.communication.emit(MessageType.ROUTE_SYNC, { route })
+      this.communication.sendRouteSync(route)
+    }
+  }
+
+  /**
+   * 同步指定路由到主应用（用于子应用路由框架的路由变化）
+   */
+  public syncRouteToHost(route: string): void {
+    if (route !== this.currentRoute) {
+      this.currentRoute = route
+      this.communication.sendRouteSync(route)
     }
   }
 

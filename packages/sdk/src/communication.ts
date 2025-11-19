@@ -4,6 +4,7 @@ import type {
   EventMessage,
   RequestMessage,
   ResponseMessage,
+  RouteSyncMessage,
 } from '@micro-iframe/types'
 import { MessageSource as Source, MessageType as Type } from '@micro-iframe/types'
 
@@ -95,6 +96,17 @@ export class MicroCommunication {
       payload,
     }
     this.sendMessage(eventMessage)
+  }
+
+  /**
+   * 发送路由同步消息
+   */
+  public sendRouteSync(route: string): void {
+    const routeSyncMessage: Omit<RouteSyncMessage, 'source' | 'timestamp'> = {
+      type: Type.ROUTE_SYNC,
+      route,
+    }
+    this.sendMessage(routeSyncMessage)
   }
 
   /**

@@ -22,6 +22,7 @@ export class RouterManager {
   private mode: RouterMode = RouterMode.HISTORY
   private hashChangeHandler?: () => void
   private popStateHandler?: () => void
+  private isSyncingFromMicro = false
 
   constructor(
     private registry: AppRegistry,
@@ -61,7 +62,10 @@ export class RouterManager {
     if (this.mode === RouterMode.HASH) {
       // Hash 模式
       this.hashChangeHandler = () => {
-        this.handleRouteChange()
+        // 如果是从子应用同步的路由变化，不触发路由处理（避免循环）
+        if (!this.isSyncingFromMicro) {
+          this.handleRouteChange()
+        }
       }
       window.addEventListener('hashchange', this.hashChangeHandler)
     } else {
@@ -85,12 +89,18 @@ export class RouterManager {
 
     history.pushState = (...args) => {
       originalPushState.apply(history, args)
-      this.handleRouteChange()
+      // 如果是从子应用同步的路由变化，不触发路由处理（避免循环）
+      if (!this.isSyncingFromMicro) {
+        this.handleRouteChange()
+      }
     }
 
     history.replaceState = (...args) => {
       originalReplaceState.apply(history, args)
-      this.handleRouteChange()
+      // 如果是从子应用同步的路由变化，不触发路由处理（避免循环）
+      if (!this.isSyncingFromMicro) {
+        this.handleRouteChange()
+      }
     }
   }
 
@@ -158,8 +168,23 @@ export class RouterManager {
         this.currentApps.find((current) => current.config.name === app.config.name)
       ).concat(appsToMount)
 
-      // 发送路由变更消息
-      this.communication.emit(MessageType.ROUTE_CHANGE, { route: path })
+      // 发送路由变更消息给匹配的应用
+      // 针对每个匹配的应用，提取子应用路由部分并发送
+      // 只发送给已经挂载的应用（有 iframe 的应用）
+      // 排除刚刚挂载的应用，因为它们已经在 mountApp 中收到了初始路由
+      for (const app of matchedApps) {
+        const iframeWindow = app.iframe?.contentWindow
+        // 如果应用刚刚挂载，跳过发送路由变更消息（已经在 mountApp 中发送了初始路由）
+        const isJustMounted = appsToMount.find((mounted) => mounted.config.name === app.config.name)
+        if (iframeWindow && !isJustMounted) {
+          try {
+            const subRoute = this.extractSubRoute(path, app.config.routeMatch)
+            this.communication.sendRouteChange(subRoute, iframeWindow)
+          } catch (error) {
+            console.warn(`Failed to send route change to ${app.config.name}:`, error)
+          }
+        }
+      }
     } catch (error) {
       console.error('Error handling route change:', error)
       // 不抛出错误，避免阻塞路由变化
@@ -191,11 +216,15 @@ export class RouterManager {
           // 使用 setTimeout 确保子应用的通信管理器已经初始化
           setTimeout(() => {
             try {
+              // 发送基础路径（routeMatch）而不是完整路径，让子应用知道自己的基础路径
+              const baseRoute = typeof app.config.routeMatch === 'string' 
+                ? app.config.routeMatch 
+                : ''
               this.communication.sendLifecycle(
                 MessageType.MOUNT,
                 {
                   name: app.config.name,
-                  route,
+                  route: baseRoute,
                   meta: app.config.meta,
                 },
                 iframeWindow
@@ -211,6 +240,20 @@ export class RouterManager {
 
       // 显示应用
       this.loader.showApp(app)
+
+      // 发送初始路由给子应用（确保子应用知道当前路由）
+      const iframeWindow = app.iframe?.contentWindow
+      if (iframeWindow) {
+        // 延迟发送，确保子应用的路由管理器已经初始化
+        setTimeout(() => {
+          try {
+            const subRoute = this.extractSubRoute(route, app.config.routeMatch)
+            this.communication.sendRouteChange(subRoute, iframeWindow)
+          } catch (error) {
+            console.warn(`Failed to send initial route to ${app.config.name}:`, error)
+          }
+        }, 150)
+      }
     } catch (error) {
       console.error(`Failed to mount app ${app.config.name}:`, error)
       throw error
@@ -229,18 +272,84 @@ export class RouterManager {
   }
 
   /**
+   * 从完整路径中提取子应用的路由部分
+   */
+  private extractSubRoute(fullPath: string, routeMatch: string | RegExp | ((path: string) => boolean)): string {
+    if (typeof routeMatch === 'string') {
+      // 字符串匹配：去掉匹配的前缀
+      if (fullPath.startsWith(routeMatch)) {
+        const subRoute = fullPath.substring(routeMatch.length)
+        // 如果子路由为空，返回 '/'，否则返回子路由
+        return subRoute || '/'
+      }
+      // 如果完全匹配，返回 '/'
+      if (fullPath === routeMatch) {
+        return '/'
+      }
+      return fullPath
+    }
+
+    if (routeMatch instanceof RegExp) {
+      // 正则匹配：尝试提取匹配组
+      const match = fullPath.match(routeMatch)
+      if (match && match[1]) {
+        // 如果有捕获组，返回第一个捕获组
+        return match[1] || '/'
+      }
+      // 如果没有捕获组，尝试去掉匹配的部分
+      if (match) {
+        const matchedPart = match[0]
+        const subRoute = fullPath.substring(matchedPart.length)
+        return subRoute || '/'
+      }
+      return fullPath
+    }
+
+    if (typeof routeMatch === 'function') {
+      // 函数匹配：无法自动提取，返回完整路径
+      // 子应用需要自己处理
+      return fullPath
+    }
+
+    return fullPath
+  }
+
+  /**
    * 处理路由同步
    */
   private handleRouteSync(message: { route?: string }): void {
     if (message.route) {
+      const routeWithoutHash = message.route.split('#')[0]
+      
+      // 如果路径没有变化，直接返回
+      if (routeWithoutHash === this.currentPath) {
+        return
+      }
+
       // 同步子应用路由到主应用
       if (this.mode === RouterMode.HASH) {
-        window.location.hash = message.route
+        // 标记为来自子应用的同步，避免循环触发
+        this.isSyncingFromMicro = true
+        try {
+          window.location.hash = message.route
+          // 更新当前路径
+          this.currentPath = message.route
+        } finally {
+          this.isSyncingFromMicro = false
+        }
       } else {
         // History 模式下，去除 hash 部分
-        const routeWithoutHash = message.route.split('#')[0]
-        history.pushState(null, '', routeWithoutHash)
-        this.handleRouteChange()
+        // 标记为来自子应用的同步，避免循环触发
+        this.isSyncingFromMicro = true
+        try {
+          // 保留现有的 history.state
+          history.pushState(history.state, '', routeWithoutHash)
+          // 更新当前路径
+          this.currentPath = routeWithoutHash
+          // 不触发 handleRouteChange，因为子应用已经在运行，只需要更新 URL
+        } finally {
+          this.isSyncingFromMicro = false
+        }
       }
     }
   }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Outlet, useLocation, Link } from 'react-router-dom'
+import { Outlet, useLocation, NavLink, useNavigate } from 'react-router-dom'
 import type { MicroApp } from '@micro-iframe/sdk'
 
 interface AppProps {
@@ -9,28 +9,39 @@ interface AppProps {
 const App: React.FC<AppProps> = ({ microApp }) => {
   const [count, setCount] = useState(0)
   const location = useLocation()
+  const navigate = useNavigate()
+  const isInitialMount = React.useRef(true)
 
   useEffect(() => {
     // 监听路由变化，同步到微前端系统
     const syncRoute = () => {
+      // 如果是首次挂载，跳过同步（主应用已经发送了初始路由）
+      if (isInitialMount.current) {
+        isInitialMount.current = false
+        return
+      }
+
       const fullPath = location.pathname + location.search + location.hash
       const props = microApp.getCurrentProps()
       const baseRoute = props?.route || ''
       
       // 构建完整路径（主应用路径 + 子应用路径）
+      // baseRoute 是主应用的基础路径（如 /react），fullPath 是子应用内部路径（如 /home）
+      // 需要拼接成完整路径（如 /react/home）
       let syncPath = fullPath
+      // 只有当子应用路径不是以 baseRoute 开头时才拼接（避免重复）
       if (baseRoute && !fullPath.startsWith(baseRoute)) {
         const base = baseRoute.endsWith('/') ? baseRoute.slice(0, -1) : baseRoute
-        syncPath = `${base}${fullPath}`
+        // 确保子应用路径以 / 开头
+        const subPath = fullPath.startsWith('/') ? fullPath : `/${fullPath}`
+        syncPath = `${base}${subPath}`
       }
       
-      // 同步路由到主应用
-      const currentMicroRoute = microApp.router.getCurrentRoute()
-      if (syncPath !== currentMicroRoute) {
-        microApp.router.navigate(syncPath, { replace: true })
-      }
+      // 直接同步路由到主应用（不通过 navigate，避免重复处理）
+      microApp.router.syncRouteToHost(syncPath)
     }
 
+    // 路由变化时同步
     syncRoute()
 
     // 监听微前端路由变化，同步到 React Router
@@ -38,21 +49,21 @@ const App: React.FC<AppProps> = ({ microApp }) => {
       const props = microApp.getCurrentProps()
       const baseRoute = props?.route || ''
       
+      // 主应用现在发送的已经是子应用的路由部分，直接使用
       let targetPath = route
+      // 如果主应用发送的是完整路径（兼容旧版本），提取子应用路由部分
       if (baseRoute && route.startsWith(baseRoute)) {
         targetPath = route.substring(baseRoute.length) || '/'
       }
       
       if (targetPath !== location.pathname) {
-        // 使用 navigate 跳转（需要在组件外部处理）
-        // 保留现有的 history.state，避免覆盖 React Router 的状态
-        window.history.pushState(history.state, '', targetPath)
-        window.dispatchEvent(new PopStateEvent('popstate'))
+        // 使用 React Router 的 navigate 方法
+        navigate(targetPath, { replace: true })
       }
     })
 
     return unsubscribe
-  }, [microApp, location])
+  }, [microApp, location, navigate])
 
   const handleSendMessage = () => {
     microApp.communication.emit('test-event', {
@@ -94,61 +105,66 @@ const App: React.FC<AppProps> = ({ microApp }) => {
       >
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>React 子应用</h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <Link
+          <NavLink
             to="/"
-            style={{
+            style={({ isActive }) => ({
               padding: '0.5rem 1rem',
               textDecoration: 'none',
-              color: '#007bff',
+              color: isActive ? '#fff' : '#007bff',
+              background: isActive ? '#007bff' : 'transparent',
               borderRadius: '4px',
-            }}
+            })}
           >
             首页
-          </Link>
-          <Link
+          </NavLink>
+          <NavLink
             to="/page1"
-            style={{
+            style={({ isActive }) => ({
               padding: '0.5rem 1rem',
               textDecoration: 'none',
-              color: '#007bff',
+              color: isActive ? '#fff' : '#007bff',
+              background: isActive ? '#007bff' : 'transparent',
               borderRadius: '4px',
-            }}
+            })}
           >
             页面1
-          </Link>
-          <Link
+          </NavLink>
+          <NavLink
             to="/page2"
-            style={{
+            style={({ isActive }) => ({
               padding: '0.5rem 1rem',
               textDecoration: 'none',
-              color: '#007bff',
+              color: isActive ? '#fff' : '#007bff',
+              background: isActive ? '#007bff' : 'transparent',
               borderRadius: '4px',
-            }}
+            })}
           >
             页面2
-          </Link>
-          <Link
+          </NavLink>
+          <NavLink
             to="/detail"
-            style={{
+            style={({ isActive }) => ({
               padding: '0.5rem 1rem',
               textDecoration: 'none',
-              color: '#007bff',
+              color: isActive ? '#fff' : '#007bff',
+              background: isActive ? '#007bff' : 'transparent',
               borderRadius: '4px',
-            }}
+            })}
           >
             详情
-          </Link>
-          <Link
+          </NavLink>
+          <NavLink
             to="/settings"
-            style={{
+            style={({ isActive }) => ({
               padding: '0.5rem 1rem',
               textDecoration: 'none',
-              color: '#007bff',
+              color: isActive ? '#fff' : '#007bff',
+              background: isActive ? '#007bff' : 'transparent',
               borderRadius: '4px',
-            }}
+            })}
           >
             设置
-          </Link>
+          </NavLink>
         </div>
       </nav>
       <div style={{ padding: '2rem' }}>

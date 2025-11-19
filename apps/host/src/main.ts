@@ -22,6 +22,13 @@ microIframe.registerApps([
     container: '#micro-app-container',
     cache: true,
   },
+  {
+    name: 'html-app',
+    url: 'http://localhost:3003',
+    routeMatch: '/html',
+    container: '#micro-app-container',
+    cache: true,
+  },
 ])
 
 // 更新导航 active 状态

@@ -61,6 +61,22 @@ importers:
         specifier: ^7.0.0
         version: 7.2.2(@types/node@20.19.25)(jiti@2.6.1)(yaml@2.8.1)
 
+  apps/micro-html:
+    dependencies:
+      '@micro-iframe/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@micro-iframe/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vite:
+        specifier: ^7.0.0
+        version: 7.2.2(@types/node@20.19.25)(jiti@2.6.1)(yaml@2.8.1)
+
   apps/micro-react:
     dependencies:
       '@micro-iframe/sdk':

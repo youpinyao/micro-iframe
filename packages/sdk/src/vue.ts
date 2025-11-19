@@ -138,6 +138,7 @@ function createVueRouter(microApp: MicroApp, routes: any[], vue: VueDependencies
     // baseRoute 是主应用的基础路径（如 /react），fullPath 是子应用内部路径（如 /home）
     // 需要拼接成完整路径（如 /react/home）
     let syncPath = fullPath
+
     // 只有当子应用路径不是以 baseRoute 开头时才拼接（避免重复）
     if (baseRoute && !fullPath.startsWith(baseRoute)) {
       const base = baseRoute.endsWith('/') ? baseRoute.slice(0, -1) : baseRoute

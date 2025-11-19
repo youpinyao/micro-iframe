@@ -147,6 +147,8 @@ export class MicroRouter {
    * 导航到指定路由（使用 pushState，不刷新页面）
    */
   public navigate(route: string, options?: { replace?: boolean }): void {
+    console.log('navigate', route)
+    
     const targetRoute = this.resolveRoute(route)
     if (targetRoute === this.currentRoute) {
       return

@@ -1,5 +1,5 @@
 import type { AppProps, Message, LifecycleMessage } from '@micro-iframe/types'
-import { MessageType } from '@micro-iframe/types'
+import { MessageType, MessageHandler } from '@micro-iframe/types'
 
 /**
  * 生命周期钩子函数类型
@@ -15,7 +15,7 @@ export class LifecycleManager {
   private updateHook?: LifecycleHook
   private currentProps?: AppProps
 
-  constructor(private communication: { on: (type: string, handler: unknown) => () => void }) {
+  constructor(private communication: { on: (type: string, handler: MessageHandler) => () => void }) {
     this.init()
   }
 

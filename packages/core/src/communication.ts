@@ -78,8 +78,8 @@ export class CommunicationManager {
     }
 
     // 处理其他消息类型
-    this.emit(message.type, message)
-    this.emit('*', message)
+    this.triggerHandlers(message.type, message)
+    this.triggerHandlers('*', message)
   }
 
   /**
@@ -89,11 +89,11 @@ export class CommunicationManager {
     message: Omit<Message, 'source' | 'timestamp'>,
     targetWindow?: Window
   ): void {
-    const fullMessage: Message = {
+    const fullMessage = {
       ...message,
       source: this.source,
       timestamp: Date.now(),
-    }
+    } as Message
 
     const target = targetWindow || window.parent
 
@@ -106,14 +106,12 @@ export class CommunicationManager {
    * 发送事件消息
    */
   public emit(event: string, payload?: unknown, targetWindow?: Window): void {
-    this.sendMessage(
-      {
-        type: MessageType.EVENT,
-        event,
-        payload,
-      },
-      targetWindow
-    )
+    const eventMessage: Omit<EventMessage, 'source' | 'timestamp'> = {
+      type: MessageType.EVENT,
+      event,
+      payload,
+    }
+    this.sendMessage(eventMessage, targetWindow)
   }
 
   /**
@@ -134,15 +132,13 @@ export class CommunicationManager {
 
       this.requestHandlers.set(id, { resolve, reject, timeout })
 
-      this.sendMessage(
-        {
-          type: MessageType.REQUEST,
-          id,
-          method,
-          params,
-        },
-        targetWindow
-      )
+      const requestMessage: Omit<RequestMessage, 'source' | 'timestamp'> = {
+        type: MessageType.REQUEST,
+        id,
+        method,
+        params,
+      }
+      this.sendMessage(requestMessage, targetWindow)
     })
   }
 
@@ -180,16 +176,14 @@ export class CommunicationManager {
     error?: string,
     targetWindow?: Window
   ): void {
-    this.sendMessage(
-      {
-        type: MessageType.RESPONSE,
-        id,
-        success,
-        data,
-        error,
-      },
-      targetWindow
-    )
+    const responseMessage: Omit<ResponseMessage, 'source' | 'timestamp'> = {
+      type: MessageType.RESPONSE,
+      id,
+      success,
+      data,
+      error,
+    }
+    this.sendMessage(responseMessage, targetWindow)
   }
 
   /**
@@ -230,7 +224,7 @@ export class CommunicationManager {
   /**
    * 触发消息处理
    */
-  private emit(type: MessageType | string, message: Message): void {
+  private triggerHandlers(type: MessageType | string, message: Message): void {
     const handlers = this.handlers.get(type)
     if (handlers) {
       handlers.forEach((handler) => {

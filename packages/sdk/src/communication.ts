@@ -1,8 +1,9 @@
 import type {
   Message,
   MessageHandler,
-  MessageSource,
-  MessageType,
+  EventMessage,
+  RequestMessage,
+  ResponseMessage,
 } from '@micro-iframe/types'
 import { MessageSource as Source, MessageType as Type } from '@micro-iframe/types'
 
@@ -10,7 +11,7 @@ import { MessageSource as Source, MessageType as Type } from '@micro-iframe/type
  * 子应用通信管理器
  */
 export class MicroCommunication {
-  private handlers: Map<MessageType | string, Set<MessageHandler>> = new Map()
+  private handlers: Map<string, Set<MessageHandler>> = new Map()
   private requestHandlers: Map<
     string,
     {
@@ -65,19 +66,19 @@ export class MicroCommunication {
     }
 
     // 处理其他消息类型
-    this.emit(message.type, message)
-    this.emit('*', message)
+    this.triggerHandlers(message.type, message)
+    this.triggerHandlers('*', message)
   }
 
   /**
    * 发送消息到主应用
    */
   private sendMessage(message: Omit<Message, 'source' | 'timestamp'>): void {
-    const fullMessage: Message = {
+    const fullMessage = {
       ...message,
       source: Source.MICRO,
       timestamp: Date.now(),
-    }
+    } as Message
 
     if (window.parent && window.parent !== window) {
       window.parent.postMessage(fullMessage, '*')
@@ -88,11 +89,12 @@ export class MicroCommunication {
    * 发送事件消息
    */
   public emit(event: string, payload?: unknown): void {
-    this.sendMessage({
+    const eventMessage: Omit<EventMessage, 'source' | 'timestamp'> = {
       type: Type.EVENT,
       event,
       payload,
-    })
+    }
+    this.sendMessage(eventMessage)
   }
 
   /**
@@ -109,12 +111,13 @@ export class MicroCommunication {
 
       this.requestHandlers.set(id, { resolve, reject, timeout })
 
-      this.sendMessage({
+      const requestMessage: Omit<RequestMessage, 'source' | 'timestamp'> = {
         type: Type.REQUEST,
         id,
         method,
         params,
-      })
+      }
+      this.sendMessage(requestMessage)
     })
   }
 
@@ -151,19 +154,20 @@ export class MicroCommunication {
     data?: unknown,
     error?: string
   ): void {
-    this.sendMessage({
+    const responseMessage: Omit<ResponseMessage, 'source' | 'timestamp'> = {
       type: Type.RESPONSE,
       id,
       success,
       data,
       error,
-    })
+    }
+    this.sendMessage(responseMessage)
   }
 
   /**
    * 订阅消息
    */
-  public on(type: MessageType | string, handler: MessageHandler): () => void {
+  public on(type: string, handler: MessageHandler): () => void {
     if (!this.handlers.has(type)) {
       this.handlers.set(type, new Set())
     }
@@ -185,7 +189,7 @@ export class MicroCommunication {
   /**
    * 取消订阅消息
    */
-  public off(type: MessageType | string, handler: MessageHandler): void {
+  public off(type: string, handler: MessageHandler): void {
     const handlers = this.handlers.get(type)
     if (handlers) {
       handlers.delete(handler)
@@ -198,7 +202,7 @@ export class MicroCommunication {
   /**
    * 触发消息处理
    */
-  private emit(type: MessageType | string, message: Message): void {
+  private triggerHandlers(type: string, message: Message): void {
     const handlers = this.handlers.get(type)
     if (handlers) {
       handlers.forEach((handler) => {

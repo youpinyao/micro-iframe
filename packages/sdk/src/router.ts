@@ -1,4 +1,4 @@
-import { MessageType, Message, RouteChangeMessage } from '@micro-iframe/types'
+import { MessageType, Message, RouteChangeMessage, MessageHandler } from '@micro-iframe/types'
 import { getCurrentPath } from '@micro-iframe/utils'
 
 /**
@@ -10,7 +10,7 @@ export class MicroRouter {
 
   constructor(
     private communication: {
-      on: (type: string, handler: unknown) => () => void
+      on: (type: string, handler: MessageHandler) => () => void
       emit: (event: string, payload?: unknown) => void
     }
   ) {

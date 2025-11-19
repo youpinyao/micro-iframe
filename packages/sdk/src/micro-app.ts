@@ -1,7 +1,7 @@
 import { MicroCommunication } from './communication'
-import { LifecycleManager } from './lifecycle'
+import { LifecycleManager, type LifecycleHook } from './lifecycle'
 import { MicroRouter } from './router'
-import type { AppProps, LifecycleHook } from '@micro-iframe/types'
+import type { AppProps } from '@micro-iframe/types'
 
 /**
  * 检测是否在微前端环境中

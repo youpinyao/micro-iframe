@@ -149,7 +149,7 @@ export class CommunicationManager {
     method: string,
     handler: (params?: unknown) => unknown | Promise<unknown>
   ): void {
-    this.on(MessageType.REQUEST, async (message) => {
+    this.on(MessageType.REQUEST, async (message: Message) => {
       if (message.type === MessageType.REQUEST && message.method === method) {
         try {
           const result = await handler(message.params)

@@ -37,7 +37,7 @@ navLinks.forEach((link) => {
 // 监听通信
 const communication = microIframe.getCommunication()
 communication.on('*', (message: unknown) => {
-  console.log('收到消息:', message)
+  console.log('收到消息 host:', message)
 })
 
 // 导出供调试使用

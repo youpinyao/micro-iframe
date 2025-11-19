@@ -10,6 +10,12 @@ let appInstance: ReturnType<typeof createApp> | null = null
 // 设置生命周期钩子
 microApp.onMount((props) => {
   console.log('Vue 应用挂载:', props)
+  // 如果应用实例已存在，先卸载
+  if (appInstance) {
+    appInstance.unmount()
+    appInstance = null
+  }
+  // 创建新的应用实例并挂载
   appInstance = createApp(App, { microApp })
   appInstance.mount('#app')
 })
@@ -33,6 +39,6 @@ microApp.router.onRouteChange((route) => {
 
 // 监听通信
 microApp.communication.on('*', (message) => {
-  console.log('收到消息:', message)
+  console.log('收到消息 vue:', message)
 })
 

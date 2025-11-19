@@ -41,13 +41,17 @@ export class MicroIframe {
    */
   public registerApp(config: AppConfig): void {
     this.registry.register(config)
+    // 注册后检查当前路径，如果匹配则自动加载
+    this.router.checkRoute()
   }
 
   /**
    * 注册多个应用
    */
   public registerApps(configs: AppConfig[]): void {
-    configs.forEach((config) => this.registerApp(config))
+    configs.forEach((config) => this.registry.register(config))
+    // 所有应用注册后检查当前路径，如果匹配则自动加载
+    this.router.checkRoute()
   }
 
   /**

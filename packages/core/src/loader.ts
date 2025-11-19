@@ -141,11 +141,7 @@ export class AppLoader {
       const iframeWindow = app.iframe.contentWindow
       if (iframeWindow) {
         try {
-          this.communication.emit(
-            MessageType.UNMOUNT,
-            undefined,
-            iframeWindow
-          )
+          this.communication.sendLifecycle(MessageType.UNMOUNT, undefined, iframeWindow)
         } catch (error) {
           // 忽略跨域错误
           console.warn('Failed to send unmount message:', error)

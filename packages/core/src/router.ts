@@ -20,6 +20,8 @@ export class RouterManager {
   private currentPath = ''
   private currentApps: AppInstance[] = []
   private mode: RouterMode = RouterMode.HISTORY
+  private hashChangeHandler?: () => void
+  private popStateHandler?: () => void
 
   constructor(
     private registry: AppRegistry,
@@ -58,14 +60,16 @@ export class RouterManager {
 
     if (this.mode === RouterMode.HASH) {
       // Hash 模式
-      window.addEventListener('hashchange', () => {
+      this.hashChangeHandler = () => {
         this.handleRouteChange()
-      })
+      }
+      window.addEventListener('hashchange', this.hashChangeHandler)
     } else {
       // History 模式
-      window.addEventListener('popstate', () => {
+      this.popStateHandler = () => {
         this.handleRouteChange()
-      })
+      }
+      window.addEventListener('popstate', this.popStateHandler)
 
       // 拦截 pushState 和 replaceState
       this.interceptHistory()
@@ -105,10 +109,12 @@ export class RouterManager {
   /**
    * 处理路由变化
    */
-  private async handleRouteChange(): Promise<void> {
+  private async handleRouteChange(force = false): Promise<void> {
     const path = this.getPath()
 
-    if (path === this.currentPath) {
+    // 如果路径没有变化且不是强制检查，直接返回
+    // 但如果是强制检查，即使路径相同也要处理（用于应用注册后检查）
+    if (!force && path === this.currentPath) {
       return
     }
 
@@ -175,16 +181,24 @@ export class RouterManager {
       }
 
       // 发送挂载消息
+      // 延迟发送，确保子应用的通信管理器已经初始化
       const iframeWindow = app.iframe?.contentWindow
       if (iframeWindow) {
-        this.communication.emit(
-          MessageType.MOUNT,
-          {
-            route,
-            meta: app.config.meta,
-          },
-          iframeWindow
-        )
+        // 使用 setTimeout 确保子应用的通信管理器已经初始化
+        setTimeout(() => {
+          try {
+            this.communication.sendLifecycle(
+              MessageType.MOUNT,
+              {
+                route,
+                meta: app.config.meta,
+              },
+              iframeWindow
+            )
+          } catch (error) {
+            console.warn(`Failed to send mount message to ${app.config.name}:`, error)
+          }
+        }, 100)
       }
 
       // 显示应用
@@ -246,12 +260,26 @@ export class RouterManager {
   }
 
   /**
+   * 手动触发路由检查（用于应用注册后检查当前路径）
+   */
+  public checkRoute(): void {
+    // 强制检查，即使路径相同也要处理，因为可能有新注册的应用需要加载
+    this.handleRouteChange(true)
+  }
+
+  /**
    * 销毁路由管理器
    */
   public destroy(): void {
     // 清理监听器
-    window.removeEventListener('hashchange', this.handleRouteChange)
-    window.removeEventListener('popstate', this.handleRouteChange)
+    if (this.hashChangeHandler) {
+      window.removeEventListener('hashchange', this.hashChangeHandler)
+      this.hashChangeHandler = undefined
+    }
+    if (this.popStateHandler) {
+      window.removeEventListener('popstate', this.popStateHandler)
+      this.popStateHandler = undefined
+    }
   }
 }
 

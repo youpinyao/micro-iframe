@@ -4,6 +4,7 @@ import type {
   EventMessage,
   RequestMessage,
   ResponseMessage,
+  LifecycleMessage,
 } from '@micro-iframe/types'
 import { MessageSource, MessageType } from '@micro-iframe/types'
 
@@ -112,6 +113,21 @@ export class CommunicationManager {
       payload,
     }
     this.sendMessage(eventMessage, targetWindow)
+  }
+
+  /**
+   * 发送生命周期消息
+   */
+  public sendLifecycle(
+    type: MessageType.MOUNT | MessageType.UNMOUNT | MessageType.UPDATE,
+    props?: { route?: string; meta?: Record<string, unknown> },
+    targetWindow?: Window
+  ): void {
+    const lifecycleMessage: Omit<LifecycleMessage, 'source' | 'timestamp'> = {
+      type,
+      props,
+    }
+    this.sendMessage(lifecycleMessage, targetWindow)
   }
 
   /**

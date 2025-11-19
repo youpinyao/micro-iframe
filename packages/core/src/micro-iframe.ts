@@ -100,17 +100,6 @@ export class MicroIframe {
   }
 
   /**
-   * 手动触发路由更新
-   */
-  public updateRoute(): void {
-    // 通过改变路径来触发路由更新
-    const currentPath = this.router.getCurrentPath()
-    if (currentPath) {
-      window.location.hash = currentPath
-    }
-  }
-
-  /**
    * 销毁框架
    */
   public destroy(): void {

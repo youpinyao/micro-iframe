@@ -30,7 +30,6 @@ navLinks.forEach((link) => {
     const route = (link as HTMLAnchorElement).dataset.route
     if (route) {
       window.history.pushState(null, '', route)
-      microIframe.updateRoute()
     }
   })
 })

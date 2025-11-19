@@ -91,10 +91,22 @@ export class RouterManager {
   }
 
   /**
+   * 获取当前路径（根据路由模式决定是否包含 hash）
+   */
+  private getPath(): string {
+    const path = getCurrentPath()
+    // History 模式下不包含 hash
+    if (this.mode === RouterMode.HISTORY) {
+      return path.split('#')[0]
+    }
+    return path
+  }
+
+  /**
    * 处理路由变化
    */
   private async handleRouteChange(): Promise<void> {
-    const path = getCurrentPath()
+    const path = this.getPath()
 
     if (path === this.currentPath) {
       return
@@ -203,7 +215,9 @@ export class RouterManager {
       if (this.mode === RouterMode.HASH) {
         window.location.hash = message.route
       } else {
-        history.pushState(null, '', message.route)
+        // History 模式下，去除 hash 部分
+        const routeWithoutHash = message.route.split('#')[0]
+        history.pushState(null, '', routeWithoutHash)
         this.handleRouteChange()
       }
     }

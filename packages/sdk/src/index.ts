@@ -1,5 +1,5 @@
 export * from './lifecycle'
 export * from './communication'
 export * from './router'
-export { MicroApp } from './micro-app'
+export { MicroApp, createMicroApp } from './micro-app'
 

@@ -1,59 +1,70 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { createMicroApp } from '@micro-iframe/sdk'
-import { createReactRouter } from './router'
+import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router-dom'
+import { initReactMicroApp, type ReactDependencies } from '@micro-iframe/sdk'
+import App from './App'
+import Home from './views/Home'
+import Page1 from './views/Page1'
+import Page2 from './views/Page2'
+import Detail from './views/Detail'
+import Settings from './views/Settings'
 
-// 创建微前端应用实例
-const microApp = createMicroApp()
+// 定义路由配置
+const routes: RouteObject[] = [
+  {
+    index: true,
+    element: <Home />,
+  },
+  {
+    path: 'page1',
+    element: <Page1 />,
+  },
+  {
+    path: 'page2',
+    element: <Page2 />,
+  },
+  {
+    path: 'detail',
+    element: <Detail />,
+  },
+  {
+    path: 'settings',
+    element: <Settings />,
+  },
+]
 
-// 保存 React root 实例
-let root: ReturnType<typeof ReactDOM.createRoot> | null = null
+// 准备 React 依赖
+const reactDeps: ReactDependencies = {
+  React,
+  ReactDOM,
+  createBrowserRouter,
+  RouterProvider,
+  RouteObject: {} as any, // 仅用于类型，实际不使用
+}
 
-// 设置生命周期钩子
-microApp.onMount((props) => {
-  console.log('React 应用挂载:', props)
-  const rootElement = document.getElementById('root') as HTMLElement
-  
-  // 创建 React Router
-  const router = createReactRouter(microApp)
-  
-  // 如果 root 已存在，直接使用 render 更新
-  if (root) {
-    root.render(
-      <React.StrictMode>
-        <router.Provider />
-      </React.StrictMode>
-    )
-  } else {
-    // 首次挂载，创建 root
-    root = ReactDOM.createRoot(rootElement)
-    root.render(
-      <React.StrictMode>
-        <router.Provider />
-      </React.StrictMode>
-    )
-  }
+// 初始化微前端应用
+const microApp = initReactMicroApp({
+  react: reactDeps,
+  rootComponent: App,
+  routes,
+  containerId: 'root',
+  onMount: (props) => {
+    console.log('React 应用挂载:', props)
+  },
+  onUnmount: (props) => {
+    console.log('React 应用卸载:', props)
+  },
+  onUpdate: (props) => {
+    console.log('React 应用更新:', props)
+  },
 })
 
-microApp.onUnmount((props) => {
-  console.log('React 应用卸载:', props)
-  // 卸载并清理 root
-  if (root) {
-    root.unmount()
-    root = null
-  }
-})
-
-microApp.onUpdate((props) => {
-  console.log('React 应用更新:', props)
-})
-
-// 监听路由变化
+// 监听路由变化（可选）
 microApp.router.onRouteChange((route) => {
   console.log('路由变化:', route)
 })
 
-// 监听通信
+// 监听通信（可选）
 microApp.communication.on('*', (message) => {
   console.log('收到消息 react:', message)
 })

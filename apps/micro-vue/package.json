@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@micro-iframe/sdk": "workspace:*",
+    "@micro-iframe/types": "workspace:*",
     "vue": "^3.4.0",
     "vue-router": "4"
   },

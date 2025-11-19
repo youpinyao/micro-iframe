@@ -12,6 +12,7 @@ export class MicroRouter {
     private communication: {
       on: (type: string, handler: MessageHandler) => () => void
       emit: (event: string, payload?: unknown) => void
+      sendRouteSync: (route: string) => void
     }
   ) {
     this.init()

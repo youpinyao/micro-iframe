@@ -1,48 +1,74 @@
-import { createApp } from 'vue'
-import { createMicroApp } from '@micro-iframe/sdk'
-import { createVueRouter } from './router'
+import { createApp, provide, h } from 'vue'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { initVueMicroApp, type AppProps, type VueDependencies } from '@micro-iframe/sdk'
 import App from './App.vue'
 
-// 创建微前端应用实例
-const microApp = createMicroApp()
+// 定义路由配置
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    redirect: '/home',
+  },
+  {
+    path: '/home',
+    name: 'Home',
+    component: () => import('./views/Home.vue'),
+  },
+  {
+    path: '/page1',
+    name: 'Page1',
+    component: () => import('./views/Page1.vue'),
+  },
+  {
+    path: '/page2',
+    name: 'Page2',
+    component: () => import('./views/Page2.vue'),
+  },
+  {
+    path: '/detail',
+    name: 'Detail',
+    component: () => import('./views/Detail.vue'),
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('./views/Settings.vue'),
+  },
+]
 
-let appInstance: ReturnType<typeof createApp> | null = null
+// 准备 Vue 依赖
+const vueDeps: VueDependencies = {
+  createApp,
+  provide,
+  h,
+  createRouter,
+  createWebHistory,
+}
 
-// 设置生命周期钩子
-microApp.onMount((props) => {
-  console.log('Vue 应用挂载:', props)
-  // 如果应用实例已存在，先卸载
-  if (appInstance) {
-    appInstance.unmount()
-    appInstance = null
-  }
-  // 创建 Vue Router
-  const router = createVueRouter(microApp)
-  // 创建新的应用实例并挂载
-  appInstance = createApp(App, { microApp })
-  appInstance.use(router)
-  appInstance.mount('#app')
+// 初始化微前端应用
+const microApp = initVueMicroApp({
+  vue: vueDeps,
+  rootComponent: App,
+  routes,
+  containerId: 'app',
+  onMount: (props: AppProps) => {
+    console.log('Vue 应用挂载:', props)
+  },
+  onUnmount: (props: AppProps) => {
+    console.log('Vue 应用卸载:', props)
+  },
+  onUpdate: (props: AppProps) => {
+    console.log('Vue 应用更新:', props)
+  },
 })
 
-microApp.onUnmount((props) => {
-  console.log('Vue 应用卸载:', props)
-  if (appInstance) {
-    appInstance.unmount()
-    appInstance = null
-  }
-})
-
-microApp.onUpdate((props) => {
-  console.log('Vue 应用更新:', props)
-})
-
-// 监听路由变化
-microApp.router.onRouteChange((route) => {
+// 监听路由变化（可选）
+microApp.router.onRouteChange((route: string) => {
   console.log('路由变化:', route)
 })
 
-// 监听通信
-microApp.communication.on('*', (message) => {
+// 监听通信（可选）
+microApp.communication.on('*', (message: unknown) => {
   console.log('收到消息 vue:', message)
 })
 

@@ -36,22 +36,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import type { MicroApp } from '@micro-iframe/sdk'
 
-interface Props {
-  microApp: MicroApp
+// 通过 inject 获取 microApp（不再使用 props）
+const microApp = inject<MicroApp>('microApp')
+if (!microApp) {
+  throw new Error('microApp is not provided')
 }
 
-const props = defineProps<Props>()
 const route = useRoute()
 
 const count = ref(0)
 const appName = ref('')
 
 onMounted(() => {
-  const propsData = props.microApp.getCurrentProps()
+  const propsData = microApp.getCurrentProps()
   appName.value = propsData?.name || 'N/A'
 })
 
@@ -60,7 +61,7 @@ const increment = () => {
 }
 
 const sendMessage = () => {
-  props.microApp.communication.emit('test-event', {
+  microApp.communication.emit('test-event', {
     message: 'Hello from Vue App!',
     count: count.value,
   })
@@ -68,7 +69,7 @@ const sendMessage = () => {
 
 const sendRequest = async () => {
   try {
-    const result = await props.microApp.communication.request('test-method', {
+    const result = await microApp.communication.request('test-method', {
       param: 'test',
     })
     console.log('请求结果:', result)

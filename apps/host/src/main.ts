@@ -55,9 +55,6 @@ navLinks.forEach((link) => {
     if (route) {
       // 保留现有的 history.state
       window.history.pushState(history.state, '', route)
-      // 手动触发路由变化处理
-      const router = microIframe.getRouter()
-      router.checkRoute()
       // 更新导航状态
       updateNavActive()
     }

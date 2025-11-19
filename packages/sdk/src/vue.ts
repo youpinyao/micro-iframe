@@ -125,19 +125,9 @@ function createVueRouter(microApp: MicroApp, routes: any[], vue: VueDependencies
     routes,
   })
 
-  // 标记是否正在初始化，避免初始化时的重复同步
-  let isInitializing = true
-  // 初始化完成后，延迟一小段时间再允许同步
-  setTimeout(() => {
-    isInitializing = false
-  }, 200)
-
   // 监听路由变化，同步到微前端系统
   router.afterEach((to: any, from: any) => {
     // 如果正在初始化，且是从根路径重定向，跳过同步（避免重复）
-    if (isInitializing && from.path === '/' && to.path !== '/') {
-      return
-    }
 
     const fullPath = to.fullPath
     // 获取主应用的基础路径（从 props 中获取）

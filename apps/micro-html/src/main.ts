@@ -151,8 +151,15 @@ function bindPageEvents() {
 function navigate(route: string) {
   currentRoute = route
   renderPage(route)
-  // 通知路由变化
-  microApp.router.navigate(route)
+  
+  // 如果在微前端环境中，通知路由变化
+  if (microApp.isMicroApp()) {
+    microApp.router.navigate(route)
+  } else {
+    // 独立访问时，更新浏览器历史记录
+    const newUrl = window.location.origin + route
+    window.history.pushState({ route }, '', newUrl)
+  }
 }
 
 // 挂载钩子
@@ -207,9 +214,23 @@ microApp.communication.on('*', (message: Message) => {
   console.log('收到消息 html:', message)
 })
 
-// 如果不在微前端环境中，直接渲染（用于独立开发）
+// 如果不在微前端环境中，直接渲染（支持独立访问）
 if (!microApp.isMicroApp()) {
-  renderPage('/')
+  // 获取当前 URL 路径
+  const currentPath = window.location.pathname
+  const initialRoute = routes[currentPath] ? currentPath : '/'
+  currentRoute = initialRoute
+  renderPage(initialRoute)
   bindPageEvents()
+
+  // 监听浏览器前进后退
+  window.addEventListener('popstate', () => {
+    const path = window.location.pathname
+    const route = routes[path] ? path : '/'
+    if (route !== currentRoute) {
+      currentRoute = route
+      renderPage(route)
+    }
+  })
 }
 

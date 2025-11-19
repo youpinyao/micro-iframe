@@ -1,7 +1,7 @@
 export * from './lifecycle'
 export * from './communication'
 export * from './router'
-export { MicroApp, createMicroApp } from './micro-app'
+export { MicroApp, createMicroApp, isMicroApp } from './micro-app'
 export { initReactMicroApp, type ReactMicroAppOptions, type ReactDependencies } from './react'
 export { initVueMicroApp, type VueMicroAppOptions, type VueDependencies } from './vue'
 export { createUseRouteSync, type ReactRouterDependencies } from './useRouteSync'

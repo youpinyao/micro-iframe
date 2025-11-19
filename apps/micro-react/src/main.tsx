@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router-dom'
 import {
   initReactMicroApp,
+  isMicroApp,
   type ReactDependencies,
   type AppProps,
   type Message,
@@ -73,3 +74,25 @@ microApp.router.onRouteChange((route: string) => {
 microApp.communication.on('*', (message: Message) => {
   console.log('收到消息 react:', message)
 })
+
+// 如果不在微前端环境中，直接挂载应用（支持独立访问）
+if (!isMicroApp()) {
+  const rootElement = document.getElementById('root')
+  if (rootElement) {
+    // 创建路由配置，将 microApp 注入到根组件
+    // 由于 routes 中第一个是 index 路由，需要将其作为根路由的子路由
+    const routerConfig: RouteObject[] = [
+      {
+        path: '/',
+        element: React.createElement(App, { microApp }),
+        children: routes,
+      },
+    ]
+
+    const router = createBrowserRouter(routerConfig)
+    const root = ReactDOM.createRoot(rootElement)
+    root.render(
+      React.createElement(React.StrictMode, null, React.createElement(RouterProvider, { router }))
+    )
+  }
+}

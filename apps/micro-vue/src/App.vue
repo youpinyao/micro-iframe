@@ -1,29 +1,43 @@
 <template>
   <div class="app">
-    <h1>Vue 子应用</h1>
-    <div class="info">
-      <p>当前路由: {{ route }}</p>
-      <p>应用名称: {{ appName }}</p>
-      <p>计数: {{ count }}</p>
-    </div>
-    <div class="actions">
-      <button @click="increment">增加计数</button>
-      <button @click="sendMessage">发送事件</button>
-      <button @click="sendRequest">发送请求</button>
-    </div>
-    <div class="features">
-      <h2>功能演示</h2>
-      <ul>
-        <li>生命周期管理：应用已挂载</li>
-        <li>路由同步：当前路由 {{ route }}</li>
-        <li>通信功能：可以发送事件和请求</li>
-      </ul>
+    <nav class="navbar">
+      <h1>Vue 子应用</h1>
+      <div class="nav-links">
+        <router-link to="/">首页</router-link>
+        <router-link to="/page1">页面1</router-link>
+        <router-link to="/page2">页面2</router-link>
+        <router-link to="/detail">详情</router-link>
+        <router-link to="/settings">设置</router-link>
+      </div>
+    </nav>
+    <div class="content">
+      <div class="info">
+        <p>当前路由: {{ $route.fullPath }}</p>
+        <p>应用名称: {{ appName }}</p>
+        <p>计数: {{ count }}</p>
+      </div>
+      <div class="actions">
+        <button @click="increment">增加计数</button>
+        <button @click="sendMessage">发送事件</button>
+        <button @click="sendRequest">发送请求</button>
+      </div>
+      <router-view />
+      <div class="features">
+        <h2>功能演示</h2>
+        <ul>
+          <li>生命周期管理：应用已挂载</li>
+          <li>Vue Router 集成：使用 vue-router 进行路由管理</li>
+          <li>路由同步：路由变化自动同步到主应用</li>
+          <li>通信功能：可以发送事件和请求</li>
+        </ul>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import type { MicroApp } from '@micro-iframe/sdk'
 
 interface Props {
@@ -31,23 +45,14 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const route = useRoute()
 
 const count = ref(0)
-const route = ref('')
 const appName = ref('')
 
 onMounted(() => {
-  route.value = props.microApp.router.getCurrentRoute()
   const propsData = props.microApp.getCurrentProps()
   appName.value = propsData?.name || 'N/A'
-
-  const unsubscribe = props.microApp.router.onRouteChange((newRoute) => {
-    route.value = newRoute
-  })
-
-  onUnmounted(() => {
-    unsubscribe()
-  })
 })
 
 const increment = () => {
@@ -77,16 +82,55 @@ const sendRequest = async () => {
 
 <style scoped>
 .app {
-  padding: 2rem;
   font-family: Arial, sans-serif;
 }
 
+.navbar {
+  background: #f8f9fa;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.navbar h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-links a {
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  color: #007bff;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.nav-links a:hover,
+.nav-links a.router-link-active {
+  background: #e9ecef;
+  color: #0056b3;
+}
+
+.content {
+  padding: 2rem;
+}
+
 .info {
-  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
 }
 
 .actions {
-  margin-top: 1rem;
+  margin-bottom: 2rem;
   display: flex;
   gap: 1rem;
 }
@@ -106,6 +150,8 @@ button:hover {
 
 .features {
   margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #dee2e6;
 }
 
 ul {

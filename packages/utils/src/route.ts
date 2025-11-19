@@ -37,4 +37,3 @@ export function getRoutePath(path: string): string {
     return path.split('?')[0].split('#')[0]
   }
 }
-

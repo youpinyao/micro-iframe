@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createMicroApp } from '@micro-iframe/sdk'
-import App from './App'
+import { createReactRouter } from './router'
 
 // 创建微前端应用实例
 const microApp = createMicroApp()
@@ -14,11 +14,14 @@ microApp.onMount((props) => {
   console.log('React 应用挂载:', props)
   const rootElement = document.getElementById('root') as HTMLElement
   
+  // 创建 React Router
+  const router = createReactRouter(microApp)
+  
   // 如果 root 已存在，直接使用 render 更新
   if (root) {
     root.render(
       <React.StrictMode>
-        <App microApp={microApp} />
+        <router.Provider />
       </React.StrictMode>
     )
   } else {
@@ -26,7 +29,7 @@ microApp.onMount((props) => {
     root = ReactDOM.createRoot(rootElement)
     root.render(
       <React.StrictMode>
-        <App microApp={microApp} />
+        <router.Provider />
       </React.StrictMode>
     )
   }

@@ -24,6 +24,28 @@ microIframe.registerApps([
   },
 ])
 
+// 更新导航 active 状态
+const updateNavActive = () => {
+  const currentPath = window.location.pathname
+  const navLinks = document.querySelectorAll('nav a[data-route]')
+  
+  navLinks.forEach((link) => {
+    const linkElement = link as HTMLAnchorElement
+    const linkRoute = linkElement.dataset.route || ''
+    
+    // 移除所有 active 类
+    linkElement.classList.remove('active')
+    
+    // 判断是否应该激活
+    // 如果当前路径完全匹配，或者当前路径以该路由开头（且不是根路径）
+    if (linkRoute === '/' && currentPath === '/') {
+      linkElement.classList.add('active')
+    } else if (linkRoute !== '/' && currentPath.startsWith(linkRoute)) {
+      linkElement.classList.add('active')
+    }
+  })
+}
+
 // 设置导航
 const navLinks = document.querySelectorAll('nav a[data-route]')
 navLinks.forEach((link) => {
@@ -32,12 +54,55 @@ navLinks.forEach((link) => {
     const route = (link as HTMLAnchorElement).dataset.route
     if (route) {
       window.history.pushState(null, '', route)
+      // 手动触发路由变化处理
+      const router = microIframe.getRouter()
+      router.checkRoute()
+      // 更新导航状态
+      updateNavActive()
     }
   })
 })
 
-// 监听通信
+// 监听路由变化，更新导航状态
+const router = microIframe.getRouter()
 const communication = microIframe.getCommunication()
+
+// 监听通信管理器中的路由变化事件
+communication.on('ROUTE_CHANGE', () => {
+  setTimeout(() => {
+    updateNavActive()
+  }, 0)
+})
+
+// 监听 popstate 事件（浏览器前进后退）
+window.addEventListener('popstate', () => {
+  setTimeout(() => {
+    updateNavActive()
+  }, 0)
+})
+
+// 拦截 pushState 和 replaceState
+const originalPushState = history.pushState
+const originalReplaceState = history.replaceState
+
+history.pushState = function (...args) {
+  originalPushState.apply(history, args)
+  setTimeout(() => {
+    updateNavActive()
+  }, 0)
+}
+
+history.replaceState = function (...args) {
+  originalReplaceState.apply(history, args)
+  setTimeout(() => {
+    updateNavActive()
+  }, 0)
+}
+
+// 初始化导航状态
+updateNavActive()
+
+// 监听通信（除了路由变化，因为已经在上面单独监听了）
 communication.on('*', (message: unknown) => {
   console.log('收到消息 host:', message)
 })

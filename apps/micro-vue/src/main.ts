@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createMicroApp } from '@micro-iframe/sdk'
+import { createVueRouter } from './router'
 import App from './App.vue'
 
 // 创建微前端应用实例
@@ -15,8 +16,11 @@ microApp.onMount((props) => {
     appInstance.unmount()
     appInstance = null
   }
+  // 创建 Vue Router
+  const router = createVueRouter(microApp)
   // 创建新的应用实例并挂载
   appInstance = createApp(App, { microApp })
+  appInstance.use(router)
   appInstance.mount('#app')
 })
 

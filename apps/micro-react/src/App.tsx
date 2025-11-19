@@ -45,7 +45,8 @@ const App: React.FC<AppProps> = ({ microApp }) => {
       
       if (targetPath !== location.pathname) {
         // 使用 navigate 跳转（需要在组件外部处理）
-        window.history.pushState(null, '', targetPath)
+        // 保留现有的 history.state，避免覆盖 React Router 的状态
+        window.history.pushState(history.state, '', targetPath)
         window.dispatchEvent(new PopStateEvent('popstate'))
       }
     })

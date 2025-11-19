@@ -53,7 +53,8 @@ navLinks.forEach((link) => {
     e.preventDefault()
     const route = (link as HTMLAnchorElement).dataset.route
     if (route) {
-      window.history.pushState(null, '', route)
+      // 保留现有的 history.state
+      window.history.pushState(history.state, '', route)
       // 手动触发路由变化处理
       const router = microIframe.getRouter()
       router.checkRoute()

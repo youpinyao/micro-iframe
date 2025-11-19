@@ -151,8 +151,9 @@ export class MicroRouter {
       const hashValue = targetRoute.startsWith('#') ? targetRoute.substring(1) : targetRoute
       if (options?.replace) {
         // replace 模式：使用 replaceState 替换 hash
+        // 保留现有的 history.state，避免覆盖 Vue Router 等框架的状态
         const newUrl = `${window.location.pathname}${window.location.search}#${hashValue}`
-        history.replaceState(null, '', newUrl)
+        history.replaceState(history.state, '', newUrl)
         // 手动触发同步
         this.syncRoute()
       } else {
@@ -161,10 +162,11 @@ export class MicroRouter {
       }
     } else {
       // History 模式：使用 pushState/replaceState
+      // 保留现有的 history.state，避免覆盖 Vue Router 等框架的状态
       if (options?.replace) {
-        history.replaceState(null, '', targetRoute)
+        history.replaceState(history.state, '', targetRoute)
       } else {
-        history.pushState(null, '', targetRoute)
+        history.pushState(history.state, '', targetRoute)
       }
       // 手动触发同步（因为拦截器已经设置，但需要确保同步）
       this.syncRoute()

@@ -3,6 +3,7 @@
     <nav class="navbar">
       <h1>Vue 子应用</h1>
       <div class="nav-links">
+        <button @click="microApp.router.push('/react/page1')">跳转到 React</button>
         <router-link to="/home">首页</router-link>
         <router-link to="/page1">页面1</router-link>
         <router-link to="/page2">页面2</router-link>

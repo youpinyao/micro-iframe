@@ -89,18 +89,12 @@ export class RouterManager {
 
     history.pushState = (...args) => {
       originalPushState.apply(history, args)
-      // 如果是从子应用同步的路由变化，不触发路由处理（避免循环）
-      if (!this.isSyncingFromMicro) {
-        this.handleRouteChange()
-      }
+      this.handleRouteChange()
     }
 
     history.replaceState = (...args) => {
       originalReplaceState.apply(history, args)
-      // 如果是从子应用同步的路由变化，不触发路由处理（避免循环）
-      if (!this.isSyncingFromMicro) {
-        this.handleRouteChange()
-      }
+      this.handleRouteChange()
     }
   }
 
@@ -150,8 +144,7 @@ export class RouterManager {
 
       // 加载新匹配的应用
       const appsToMount = matchedApps.filter(
-        (app) =>
-          !this.currentApps.find((current) => current.config.name === app.config.name)
+        (app) => !this.currentApps.find((current) => current.config.name === app.config.name)
       )
 
       for (const app of appsToMount) {
@@ -164,9 +157,11 @@ export class RouterManager {
       }
 
       // 更新当前应用列表
-      this.currentApps = matchedApps.filter((app) =>
-        this.currentApps.find((current) => current.config.name === app.config.name)
-      ).concat(appsToMount)
+      this.currentApps = matchedApps
+        .filter((app) =>
+          this.currentApps.find((current) => current.config.name === app.config.name)
+        )
+        .concat(appsToMount)
 
       // 发送路由变更消息给匹配的应用
       // 针对每个匹配的应用，提取子应用路由部分并发送
@@ -217,9 +212,8 @@ export class RouterManager {
           setTimeout(() => {
             try {
               // 发送基础路径（routeMatch）而不是完整路径，让子应用知道自己的基础路径
-              const baseRoute = typeof app.config.routeMatch === 'string' 
-                ? app.config.routeMatch 
-                : ''
+              const baseRoute =
+                typeof app.config.routeMatch === 'string' ? app.config.routeMatch : ''
               this.communication.sendLifecycle(
                 MessageType.MOUNT,
                 {
@@ -274,7 +268,10 @@ export class RouterManager {
   /**
    * 从完整路径中提取子应用的路由部分
    */
-  private extractSubRoute(fullPath: string, routeMatch: string | RegExp | ((path: string) => boolean)): string {
+  private extractSubRoute(
+    fullPath: string,
+    routeMatch: string | RegExp | ((path: string) => boolean)
+  ): string {
     if (typeof routeMatch === 'string') {
       // 字符串匹配：去掉匹配的前缀
       if (fullPath.startsWith(routeMatch)) {
@@ -320,7 +317,7 @@ export class RouterManager {
   private handleRouteSync(message: { route?: string }): void {
     if (message.route) {
       const routeWithoutHash = message.route.split('#')[0]
-      
+
       // 如果路径没有变化，直接返回
       if (routeWithoutHash === this.currentPath) {
         return
@@ -399,4 +396,3 @@ export class RouterManager {
     }
   }
 }
-

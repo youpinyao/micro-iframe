@@ -62,6 +62,7 @@ const App: React.FC<AppProps> = ({ microApp }) => {
       >
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>React 子应用</h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
+          <button onClick={() => microApp.router.push('/vue/page1')}>跳转到 Vue</button>
           <NavLink
             to="/"
             style={({ isActive }) => ({

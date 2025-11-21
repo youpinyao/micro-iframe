@@ -3,7 +3,6 @@
     <nav class="navbar">
       <h1>Vue 子应用</h1>
       <div class="nav-links">
-        <button @click="microApp.router.push('/react/page1')">跳转到 React</button>
         <router-link to="/home">首页</router-link>
         <router-link to="/page1">页面1</router-link>
         <router-link to="/page2">页面2</router-link>
@@ -19,8 +18,6 @@
       </div>
       <div class="actions">
         <button @click="increment">增加计数</button>
-        <button @click="sendMessage">发送事件</button>
-        <button @click="sendRequest">发送请求</button>
       </div>
       <router-view />
       <div class="features">
@@ -39,13 +36,6 @@
 <script setup lang="ts">
 import { ref, onMounted, inject } from 'vue'
 import { useRoute } from 'vue-router'
-import type { MicroApp } from '@micro-iframe/sdk'
-
-// 通过 inject 获取 microApp（不再使用 props）
-const microApp = inject<MicroApp>('microApp')
-if (!microApp) {
-  throw new Error('microApp is not provided')
-}
 
 const route = useRoute()
 
@@ -53,32 +43,10 @@ const count = ref(0)
 const appName = ref('')
 
 onMounted(() => {
-  const propsData = microApp.getCurrentProps()
-  appName.value = propsData?.name || 'N/A'
 })
 
 const increment = () => {
   count.value++
-}
-
-const sendMessage = () => {
-  microApp.communication.emit('test-event', {
-    message: 'Hello from Vue App!',
-    count: count.value,
-  })
-}
-
-const sendRequest = async () => {
-  try {
-    const result = await microApp.communication.request('test-method', {
-      param: 'test',
-    })
-    console.log('请求结果:', result)
-    alert(`请求成功: ${JSON.stringify(result)}`)
-  } catch (error) {
-    console.error('请求失败:', error)
-    alert(`请求失败: ${error}`)
-  }
 }
 </script>
 

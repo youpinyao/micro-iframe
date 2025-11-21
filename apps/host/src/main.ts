@@ -1,117 +1,78 @@
-import { MicroIframe } from '@micro-iframe/core'
-import { RouterMode } from '@micro-iframe/core'
+import { createRouterProxy } from '@micro-iframe/core'
 
-// 创建微前端框架实例
-const microIframe = new MicroIframe({
-  routerMode: RouterMode.HISTORY,
-})
+// 当前路由状态
+let currentRoute = window.location.pathname
 
-// 注册子应用
-microIframe.registerApps([
-  {
-    name: 'react-app',
-    url: 'http://localhost:3001',
-    routeMatch: '/react',
-    container: '#micro-app-container',
-    cache: true,
-  },
-  {
-    name: 'vue-app',
-    url: 'http://localhost:3002',
-    routeMatch: '/vue',
-    container: '#micro-app-container',
-    cache: true,
-  },
-  {
-    name: 'html-app',
-    url: 'http://localhost:3003',
-    routeMatch: '/html',
-    container: '#micro-app-container',
-    cache: true,
-  },
-])
-
-// 更新导航 active 状态
-const updateNavActive = () => {
-  const currentPath = window.location.pathname
-  const navLinks = document.querySelectorAll('nav a[data-route]')
-  
+// 更新导航链接的激活状态
+const updateActiveNav = (route: string) => {
+  const navLinks = document.querySelectorAll('nav a')
   navLinks.forEach((link) => {
-    const linkElement = link as HTMLAnchorElement
-    const linkRoute = linkElement.dataset.route || ''
-    
-    // 移除所有 active 类
-    linkElement.classList.remove('active')
-    
-    // 判断是否应该激活
-    // 如果当前路径完全匹配，或者当前路径以该路由开头（且不是根路径）
-    if (linkRoute === '/' && currentPath === '/') {
-      linkElement.classList.add('active')
-    } else if (linkRoute !== '/' && currentPath.startsWith(linkRoute)) {
-      linkElement.classList.add('active')
+    const linkRoute = link.getAttribute('data-route')
+    if (linkRoute === route) {
+      link.classList.add('active')
+    } else {
+      link.classList.remove('active')
     }
   })
 }
 
-// 设置导航
-const navLinks = document.querySelectorAll('nav a[data-route]')
-navLinks.forEach((link) => {
-  link.addEventListener('click', (e) => {
-    e.preventDefault()
-    const route = (link as HTMLAnchorElement).dataset.route
-    if (route) {
-      // 保留现有的 history.state
-      window.history.pushState(history.state, '', route)
-      // 更新导航状态
-      updateNavActive()
+// 处理路由跳转
+const handleRouteChange = (url: string, replace = false) => {
+  try {
+    const urlObj = new URL(url, window.location.href)
+    const newRoute = urlObj.pathname
+
+    // 如果路由没有变化，允许跳转（可能是 hash 或 query 变化）
+    if (newRoute === currentRoute) {
+      console.log(`路由未变化，但允许跳转（可能是 hash 或 query 变化）: ${url}`)
+      return true
     }
-  })
+
+    console.log(`路由跳转: ${currentRoute} -> ${newRoute}`, { replace, fullUrl: url })
+
+    // 更新当前路由
+    currentRoute = newRoute
+
+    // 更新导航链接激活状态
+    updateActiveNav(newRoute)
+
+    // 这里可以添加更多的路由处理逻辑
+    // 例如：加载对应的微前端应用、更新页面内容等
+
+    // 返回 true 表示允许跳转，false 表示阻止跳转
+    return true
+  } catch (error) {
+    console.error('路由跳转处理失败:', error, { url })
+    // 解析失败时，仍然允许跳转，让浏览器处理
+    return true
+  }
+}
+
+// 创建路由代理
+const routerProxy = createRouterProxy({
+  onNavigate: handleRouteChange,
+  proxyHistory: true,
+  proxyAnchorClick: true,
 })
 
-// 监听路由变化，更新导航状态
-const router = microIframe.getRouter()
-const communication = microIframe.getCommunication()
+// 初始化导航链接的激活状态
+updateActiveNav(currentRoute)
 
-// 监听通信管理器中的路由变化事件
-communication.on('ROUTE_CHANGE', () => {
-  setTimeout(() => {
-    updateNavActive()
-  }, 0)
-})
+// 注意：导航链接的点击由路由代理的 proxyAnchorClick 统一处理
+// 不需要手动添加事件监听器，避免重复处理
 
-// 监听 popstate 事件（浏览器前进后退）
+// 监听浏览器前进后退
 window.addEventListener('popstate', () => {
-  setTimeout(() => {
-    updateNavActive()
-  }, 0)
+  const newRoute = window.location.pathname
+  if (newRoute !== currentRoute) {
+    currentRoute = newRoute
+    updateActiveNav(newRoute)
+    console.log('浏览器导航:', newRoute)
+  }
 })
 
-// 拦截 pushState 和 replaceState
-const originalPushState = history.pushState
-const originalReplaceState = history.replaceState
+// 初始化时同步路由状态
+console.log('路由代理已初始化，当前路由:', currentRoute)
 
-history.pushState = function (...args) {
-  originalPushState.apply(history, args)
-  setTimeout(() => {
-    updateNavActive()
-  }, 0)
-}
-
-history.replaceState = function (...args) {
-  originalReplaceState.apply(history, args)
-  setTimeout(() => {
-    updateNavActive()
-  }, 0)
-}
-
-// 初始化导航状态
-updateNavActive()
-
-// 监听通信（除了路由变化，因为已经在上面单独监听了）
-communication.on('*', (message: unknown) => {
-  console.log('收到消息 host:', message)
-})
-
-// 导出供调试使用
-;(window as unknown as { microIframe: MicroIframe }).microIframe = microIframe
-
+// 导出路由代理实例，供其他模块使用
+export { routerProxy }

@@ -1,48 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Outlet, useLocation, NavLink, useNavigate } from 'react-router-dom'
-import type { MicroApp } from '@micro-iframe/sdk'
-import { createUseRouteSync, type ReactRouterDependencies } from '@micro-iframe/sdk'
 
-// 创建路由同步 Hook
-const useRouteSync = createUseRouteSync({
-  useLocation,
-  useNavigate,
-  useEffect,
-  useRef,
-})
-
-interface AppProps {
-  microApp: MicroApp
-}
-
-const App: React.FC<AppProps> = ({ microApp }) => {
+const App: React.FC = () => {
   const [count, setCount] = useState(0)
   const location = useLocation()
-
-  // 使用 Hook 自动处理路由同步
-  useRouteSync(microApp)
-
-  const handleSendMessage = () => {
-    microApp.communication.emit('test-event', {
-      message: 'Hello from React App!',
-      count,
-    })
-  }
-
-  const handleRequest = async () => {
-    try {
-      const result = await microApp.communication.request('test-method', {
-        param: 'test',
-      })
-      console.log('请求结果:', result)
-      alert(`请求成功: ${JSON.stringify(result)}`)
-    } catch (error) {
-      console.error('请求失败:', error)
-      alert(`请求失败: ${error}`)
-    }
-  }
-
-  const props = microApp.getCurrentProps()
 
   return (
     <div
@@ -62,7 +23,6 @@ const App: React.FC<AppProps> = ({ microApp }) => {
       >
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>React 子应用</h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <button onClick={() => microApp.router.push('/vue/page1')}>跳转到 Vue</button>
           <NavLink
             to="/"
             style={({ isActive }) => ({
@@ -135,13 +95,10 @@ const App: React.FC<AppProps> = ({ microApp }) => {
           }}
         >
           <p>当前路由: {location.pathname}</p>
-          <p>应用名称: {props?.name || 'N/A'}</p>
           <p>计数: {count}</p>
         </div>
         <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <button onClick={() => setCount(count + 1)}>增加计数</button>
-          <button onClick={handleSendMessage}>发送事件</button>
-          <button onClick={handleRequest}>发送请求</button>
         </div>
         <Outlet />
         <div
@@ -165,4 +122,3 @@ const App: React.FC<AppProps> = ({ microApp }) => {
 }
 
 export default App
-

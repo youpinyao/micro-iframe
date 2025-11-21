@@ -5,14 +5,6 @@
 
 export interface RouterProxyOptions {
   /**
-   * 路由跳转回调函数
-   * @param url 目标 URL
-   * @param replace 是否替换当前历史记录
-   * @returns 是否阻止默认行为
-   */
-  onNavigate?: (url: string, replace?: boolean) => boolean | void
-
-  /**
    * 是否代理 history 对象
    * @default true
    */
@@ -64,7 +56,6 @@ export interface RouterProxy {
  */
 export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy {
   const {
-    onNavigate,
     proxyHistory = true,
     proxyAnchorClick = true,
   } = options
@@ -76,15 +67,12 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
   const originalHistoryBack = window.history.back.bind(window.history)
   const originalHistoryForward = window.history.forward.bind(window.history)
 
-  // 处理 URL 跳转
-  const handleNavigate = (url: string, replace = false): boolean => {
-    if (onNavigate) {
-      const result = onNavigate(url, replace)
-      if (result === false) {
-        return false
-      }
-    }
-    return true
+  // 触发 popstate 事件的辅助函数
+  const triggerPopState = () => {
+    const popStateEvent = new PopStateEvent('popstate', {
+      state: window.history.state,
+    })
+    window.dispatchEvent(popStateEvent)
   }
 
   // 代理 history API
@@ -95,11 +83,9 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
       url?: string | URL | null,
     ) {
       if (url) {
-        const urlString = typeof url === 'string' ? url : url.toString()
-        const shouldProceed = handleNavigate(urlString, false)
-        if (shouldProceed) {
-          originalHistoryPushState(state, title, url)
-        }
+        originalHistoryPushState(state, title, url)
+        // 手动触发 popstate 事件，使路由变化统一处理
+        triggerPopState()
       } else {
         originalHistoryPushState(state, title, url)
       }
@@ -111,11 +97,9 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
       url?: string | URL | null,
     ) {
       if (url) {
-        const urlString = typeof url === 'string' ? url : url.toString()
-        const shouldProceed = handleNavigate(urlString, true)
-        if (shouldProceed) {
-          originalHistoryReplaceState(state, title, url)
-        }
+        originalHistoryReplaceState(state, title, url)
+        // 手动触发 popstate 事件，使路由变化统一处理
+        triggerPopState()
       } else {
         originalHistoryReplaceState(state, title, url)
       }
@@ -156,12 +140,9 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
               // 检查是否有 download 属性
               if (!anchor.hasAttribute('download')) {
                 event.preventDefault()
-                const shouldProceed = handleNavigate(anchor.href, false)
-                if (shouldProceed) {
-                  originalHistoryPushState({}, '', anchor.href)
-                  // 注意：pushState 不会触发 popstate 事件
-                  // UI 更新应该在 onNavigate 回调中处理
-                }
+                originalHistoryPushState({}, '', anchor.href)
+                // 手动触发 popstate 事件，使路由变化统一处理
+                triggerPopState()
               }
             }
           }
@@ -173,12 +154,9 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
               const currentUrl = new URL(window.location.href)
               if (resolvedUrl.origin === currentUrl.origin) {
                 event.preventDefault()
-                const shouldProceed = handleNavigate(anchor.href, false)
-                if (shouldProceed) {
-                  originalHistoryPushState({}, '', anchor.href)
-                  // 注意：pushState 不会触发 popstate 事件
-                  // UI 更新应该在 onNavigate 回调中处理
-                }
+                originalHistoryPushState({}, '', anchor.href)
+                // 手动触发 popstate 事件，使路由变化统一处理
+                triggerPopState()
               }
             } catch {
               // 忽略解析错误
@@ -194,17 +172,13 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
   // 返回代理实例
   return {
     navigate(url: string, replace = false) {
-      const shouldProceed = handleNavigate(url, replace)
-      if (shouldProceed) {
-        if (replace) {
-          originalHistoryReplaceState({}, '', url)
-        } else {
-          originalHistoryPushState({}, '', url)
-        }
-        // 注意：pushState/replaceState 不会触发 popstate 事件
-        // popstate 事件只在浏览器前进/后退时由浏览器自动触发
-        // 如果需要更新 UI，应该在 onNavigate 回调中处理
+      if (replace) {
+        originalHistoryReplaceState({}, '', url)
+      } else {
+        originalHistoryPushState({}, '', url)
       }
+      // 手动触发 popstate 事件，使路由变化统一处理
+      triggerPopState()
     },
 
     forward(delta = 1) {

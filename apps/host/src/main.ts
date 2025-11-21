@@ -18,23 +18,17 @@ const updateActiveNav = (route: string) => {
 
 // 创建路由代理
 const routerProxy = createRouterProxy({
+  onChange: () => {
+    const newRoute = window.location.pathname
+    updateActiveNav(newRoute)
+    console.log('路由变化:', newRoute)
+  },
   proxyHistory: true,
   proxyAnchorClick: true,
 })
 
 // 初始化导航链接的激活状态
 updateActiveNav(currentRoute)
-
-// 注意：导航链接的点击由路由代理的 proxyAnchorClick 统一处理
-// 不需要手动添加事件监听器，避免重复处理
-
-// 监听浏览器前进后退
-window.addEventListener('popstate', () => {
-  const newRoute = window.location.pathname
-
-  updateActiveNav(newRoute)
-  console.log('浏览器导航:', newRoute)
-})
 
 // 初始化时同步路由状态
 console.log('路由代理已初始化，当前路由:', currentRoute)

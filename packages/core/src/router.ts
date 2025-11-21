@@ -5,6 +5,12 @@
 
 export interface RouterProxyOptions {
   /**
+   * 路由变化回调函数
+   * 在路由变化时调用，时机与 popstate 事件相同
+   */
+  onChange?: () => void
+
+  /**
    * 是否代理 history 对象
    * @default true
    */
@@ -56,6 +62,7 @@ export interface RouterProxy {
  */
 export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy {
   const {
+    onChange,
     proxyHistory = true,
     proxyAnchorClick = true,
   } = options
@@ -73,6 +80,12 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
       state: window.history.state,
     })
     window.dispatchEvent(popStateEvent)
+  }
+
+  // 监听 popstate 事件（包括手动触发和浏览器前进后退）
+  // 统一通过 popstate 事件调用 onChange，避免重复调用
+  if (onChange) {
+    window.addEventListener('popstate', onChange)
   }
 
   // 代理 history API
@@ -202,6 +215,11 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
     },
 
     destroy() {
+      // 移除 popstate 事件监听
+      if (onChange) {
+        window.removeEventListener('popstate', onChange)
+      }
+
       // 恢复原始方法
       if (proxyHistory) {
         window.history.pushState = originalHistoryPushState

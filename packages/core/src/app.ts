@@ -14,10 +14,13 @@ export type MicroIframeOptions = {
 function getCurrentApp() {
   const items = window.location.pathname.replace(/^(\/)/, '').split('/')
   const name = items.shift()!
+  const pathname = ['', ...items].join('/') || '/'
+  const search = window.location.search
+  const hash = window.location.hash
 
   return {
     name,
-    path: ['', ...items].join('/') || '/',
+    path: pathname + search + hash,
   }
 }
 export function createMicroIframe(options: MicroIframeOptions) {

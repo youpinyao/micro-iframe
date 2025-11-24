@@ -24,7 +24,7 @@ const App: React.FC = () => {
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>React 子应用</h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <NavLink
-            to="/"
+            to="/home"
             style={({ isActive }) => ({
               padding: '0.5rem 1rem',
               textDecoration: 'none',

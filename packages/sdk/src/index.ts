@@ -6,8 +6,8 @@ export const createSubVueApp = ({ name, router }: { name: string; router: Router
   router.push = router.replace
 
   router.afterEach((to, from) => {
-    console.log('to', to.fullPath)
     console.log('from', from.fullPath)
+    console.log('to', to.fullPath)
     console.log('--------------')
 
     window.top!.postMessage(
@@ -16,6 +16,7 @@ export const createSubVueApp = ({ name, router }: { name: string; router: Router
         payload: {
           name,
           path: to.fullPath,
+          replace: !!to.redirectedFrom,
         },
       },
       '*'

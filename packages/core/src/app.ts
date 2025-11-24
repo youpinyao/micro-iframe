@@ -69,12 +69,19 @@ export function createMicroIframe(options: MicroIframeOptions) {
     })
     getIFrame(name, path).style.display = 'block'
   }
+  const hideIFrame = () => {
+    iframes.forEach((iframe) => {
+      iframe.style.display = 'none'
+    })
+  }
   const checkActiveApp = () => {
     const currentApp = getCurrentApp()
     const activeApp = apps.find((app) => app.name === currentApp.name)
 
     if (activeApp) {
       showIFrame(activeApp.name, currentApp.path)
+    } else {
+      hideIFrame()
     }
   }
   const routerProxy = createRouterProxy({
@@ -87,14 +94,14 @@ export function createMicroIframe(options: MicroIframeOptions) {
 
   window.addEventListener('message', (event) => {
     if (event.data.type === 'route-change') {
-      const { name, path } = event.data.payload
+      const { name, path, replace } = event.data.payload
       const { name: currentName, path: currentPath } = getCurrentApp()
 
       if (name === currentName && path === currentPath) {
         return
       }
 
-      routerProxy.navigate(`/${joinUrl(name, path)}`)
+      routerProxy.navigate(`/${joinUrl(name, path)}`, replace === true)
     }
   })
 

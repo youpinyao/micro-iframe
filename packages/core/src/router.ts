@@ -8,7 +8,7 @@ export interface RouterProxyOptions {
    * 路由变化回调函数
    * 在路由变化时调用，时机与 popstate 事件相同
    */
-  onChange?: () => void
+  onChange?: (event: PopStateEvent) => void
 
   /**
    * 是否代理 history 对象
@@ -61,11 +61,7 @@ export interface RouterProxy {
  * @returns 路由代理实例
  */
 export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy {
-  const {
-    onChange,
-    proxyHistory = true,
-    proxyAnchorClick = true,
-  } = options
+  const { onChange, proxyHistory = true, proxyAnchorClick = true } = options
 
   // 保存原始方法
   const originalHistoryPushState = window.history.pushState.bind(window.history)
@@ -75,9 +71,9 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
   const originalHistoryForward = window.history.forward.bind(window.history)
 
   // 触发 popstate 事件的辅助函数
-  const triggerPopState = () => {
+  const triggerPopState = (replace?: boolean) => {
     const popStateEvent = new PopStateEvent('popstate', {
-      state: window.history.state,
+      state: replace ? { ...window.history.state, replace } : window.history.state,
     })
     window.dispatchEvent(popStateEvent)
   }
@@ -85,16 +81,14 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
   // 监听 popstate 事件（包括手动触发和浏览器前进后退）
   // 统一通过 popstate 事件调用 onChange，避免重复调用
   if (onChange) {
-    window.addEventListener('popstate', onChange)
+    window.addEventListener('popstate', (event) => {
+      onChange?.(event)
+    })
   }
 
   // 代理 history API
   if (proxyHistory) {
-    window.history.pushState = function (
-      state: unknown,
-      title: string,
-      url?: string | URL | null,
-    ) {
+    window.history.pushState = function (state: unknown, title: string, url?: string | URL | null) {
       if (url) {
         originalHistoryPushState(state, title, url)
         // 手动触发 popstate 事件，使路由变化统一处理
@@ -107,12 +101,12 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
     window.history.replaceState = function (
       state: unknown,
       title: string,
-      url?: string | URL | null,
+      url?: string | URL | null
     ) {
       if (url) {
         originalHistoryReplaceState(state, title, url)
         // 手动触发 popstate 事件，使路由变化统一处理
-        triggerPopState()
+        triggerPopState(true)
       } else {
         originalHistoryReplaceState(state, title, url)
       }
@@ -236,4 +230,3 @@ export function createRouterProxy(options: RouterProxyOptions = {}): RouterProxy
     },
   }
 }
-

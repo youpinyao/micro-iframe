@@ -1,4 +1,4 @@
-import { createRouterProxy } from '@micro-iframe/core'
+import { createMicroIframe } from '@micro-iframe/core'
 
 // 当前路由状态
 let currentRoute = window.location.pathname
@@ -7,7 +7,7 @@ let currentRoute = window.location.pathname
 const updateActiveNav = (route: string) => {
   const navLinks = document.querySelectorAll('nav a')
   navLinks.forEach((link) => {
-    const linkRoute = link.getAttribute('data-route')
+    const linkRoute = link.getAttribute('href')
     if (linkRoute === route) {
       link.classList.add('active')
     } else {
@@ -17,14 +17,29 @@ const updateActiveNav = (route: string) => {
 }
 
 // 创建路由代理
-const routerProxy = createRouterProxy({
-  onChange: () => {
-    const newRoute = window.location.pathname
-    updateActiveNav(newRoute)
-    console.log('路由变化:', newRoute)
+const routerProxy = createMicroIframe({
+  routerProxy: {
+    onChange: () => {
+      const newRoute = window.location.pathname
+      updateActiveNav(newRoute)
+      console.log('路由变化:', newRoute)
+    },
   },
-  proxyHistory: true,
-  proxyAnchorClick: true,
+  container: 'micro-app-container',
+  apps: [
+    {
+      name: 'react',
+      url: 'http://localhost:3001',
+    },
+    {
+      name: 'vue',
+      url: 'http://localhost:3002',
+    },
+    {
+      name: 'html',
+      url: 'http://localhost:3003',
+    },
+  ],
 })
 
 // 初始化导航链接的激活状态
